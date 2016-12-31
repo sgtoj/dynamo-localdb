@@ -2,26 +2,38 @@ import * as AWS from "aws-sdk";
 import * as dynamodb from "dynamodb-local";
 import { ChildProcess } from "child_process";
 
+const testTable = require("../data/test");
 
 
 export class LocalStore {
+    private testTable: any;
     private db: AWS.DynamoDB;
     private client: AWS.DynamoDB.DocumentClient;
-    public tables: LocalStoreSchema;
-    public data: LocalStoreData;
+    public schema: LocalStoreSchema;
+    public tables: LocalStoreData;
 
     constructor(config) {
         this.config(config);
+        this.testTable = testTable;
     }
 
-    public config (configuration) {
+    public config (configuration): void {
         AWS.config.update(configuration);
         this.db = new AWS.DynamoDB();
         this.client = new AWS.DynamoDB.DocumentClient();
+        this.schema = new LocalStoreSchema(this.db);
     }
 
     public async launch (port = 8000): Promise<ChildProcess> {
         return dynamodb.launch(port, null, ["sharedDb"]);
+    }
+
+    public async test (): Promise<boolean> {
+        await this.schema.create(testTable.schemas[0]);
+        let tables = await this.schema.list();
+        return tables.some(table => {
+            return table === testTable.schemas[0].TableName;
+        });
     }
 
 }
@@ -32,31 +44,31 @@ export class LocalStoreSchema {
     constructor(dynamodb: AWS.DynamoDB) {
         this.db = dynamodb;
     }
-
-    public async create (tableSchema): Promise<AWS.DynamoDB.CreateTableOutput> {
-        return new Promise<AWS.DynamoDB.CreateTableOutput>((resolve, reject) => {
+ 
+    public async create (tableSchema): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
             this.db.createTable(tableSchema, (err, data) => {
                 if (err) return reject(err); 
-                resolve(data);
+                resolve();
             });
         });
     }
 
-    public async delete (tableName: string): Promise<AWS.DynamoDB.DeleteTableOutput> {
-        return new Promise<AWS.DynamoDB.DeleteTableOutput>((resolve, reject) => {
+    public async delete (tableName: string): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
             let tableConfig = { TableName: tableName };
             this.db.deleteTable(tableConfig, (err, data) => {
                 if (err) return reject(err);
-                resolve(data);
+                resolve();
             });
         });
     }
 
-    public async list (): Promise<AWS.DynamoDB.ListTablesOutput> {
-        return new Promise((resolve, reject) => {
+    public async list (): Promise<string[]> {
+        return new Promise<string[]>((resolve, reject) => {
             this.db.listTables({}, (err, data) => {
                 if (err) return reject(err);
-                resolve(data);
+                resolve(data.TableNames);
             });
         });
     }
@@ -66,6 +78,10 @@ export class LocalStoreSchema {
 export interface LocalStoreDataConfig {
     TableName: string;
     Item: any;
+}
+
+export interface LSItem {
+    [key: string]: AWS.DynamoDB.AttributeValue;
 }
 
 export class LocalStoreData {
@@ -81,22 +97,33 @@ export class LocalStoreData {
         this.tableData = data;
     }
 
-    public async add (table, data): Promise<AWS.DynamoDB.PutItemOutput> {
-        return new Promise<AWS.DynamoDB.PutItemOutput>((resolve, reject) => {
+    public async add (data): Promise<void> {
+        this.tableData = data;        
+        return new Promise<void>((resolve, reject) => {
             let itemData = { TableName: this.tableData, Item: this.tableData }
             this.client.put(itemData, (err, data) => {
                 if (err) return reject(err);
-                resolve(data);
+                resolve();
             });
         });
     }
 
-    public async content (table: string): Promise<AWS.DynamoDB.ScanOutput> {
-        return new Promise<AWS.DynamoDB.ScanOutput>((resolve, reject) => {
+    public async items (): Promise<LSItem[]> {
+        return new Promise<LSItem[]>((resolve, reject) => {
             let tableInfo = { TableName: this.tableName };
             return this.db.scan(tableInfo, (err, data) => {0
                 if (err) return reject(err);
-                resolve(data);
+               resolve(data.Items);
+            });
+        });
+    }
+
+    public async count (): Promise<number> {
+        return new Promise<number>((resolve, reject) => {
+            let tableInfo = { TableName: this.tableName };
+            return this.db.scan(tableInfo, (err, data) => {0
+                if (err) return reject(err);
+                resolve(data.Count);
             });
         });
     }

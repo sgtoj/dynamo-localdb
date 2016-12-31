@@ -14,6 +14,7 @@
     "typescript": "^2.1.4"
   },
   "dependencies": {
-    "aws-sdk": "^2.7.20"
+    "aws-sdk": "^2.7.20",
+    "dynamodb-local": "0.0.12"
   }
 }
