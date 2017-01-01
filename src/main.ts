@@ -4,8 +4,10 @@ import { ChildProcess } from "child_process";
 
 const testTableConfig = require("../data/testconfig");
 
+export type LSConfig = AWS.DynamoDB.ClientConfiguration;
+export type LSTableConfig = AWS.DynamoDB.CreateTableInput;
 
-export interface LocalStoreDataConfig {
+interface LocalStoreDataConfig {
     TableName: string;
     Item: any;
 }
@@ -43,7 +45,7 @@ export class LocalStore {
      * 
      * @memberOf LocalStore
      */
-    constructor(config) {
+    constructor(config: LSConfig) {
         this.config(config);
         this.testTable = testTableConfig;
     }
@@ -67,7 +69,7 @@ export class LocalStore {
      * 
      * @memberOf LocalStore
      */
-    public config (configuration): void {
+    public config (configuration: LSConfig): void {
         AWS.config.update(configuration);
         this.db = new AWS.DynamoDB();
         this.client = new AWS.DynamoDB.DocumentClient();
@@ -83,7 +85,7 @@ export class LocalStore {
      * 
      * @memberOf LocalStore
      */
-    public async launch (port = 8000): Promise<void> {
+    public async launch (port: number = 8000): Promise<void> {
         this.spawn = await dynamodb.launch(port, null, ["sharedDb"]);
     }
 
@@ -109,19 +111,19 @@ export class LocalStore {
         const table = testTableConfig.schemas[0];
         const data = testTableConfig.data[table.TableName];
         await this.schema.create(table);
-        const result = extended ? await this.testData(table.TableName, data) : await this.testSchema(table.TableName);
+        const result = extended ? await this.testData(table.TableName, data) : await this.testSchema(table);
         if (result)
-             await this.schema.delete(table.TableName);
+             await this.schema.delete(table);
         return result;
     }
 
-    public async testData(table: string, tableData): Promise<boolean> {
+    private async testData(table: string, tableData: LSItem[]): Promise<boolean> {
         await this.data.import(table, tableData);
         const data = await this.data.read(table);
         return !!data;
     }
 
-    public async testSchema(table: string): Promise<boolean> {
+    private async testSchema(table: string): Promise<boolean> {
         let tables = await this.schema.list();
         return tables.some(t => { return t === table });
     }
@@ -150,7 +152,7 @@ export class LocalStoreSchema {
      * 
      * @memberOf LocalStoreSchema
      */
-    public async create (tableSchema): Promise<void> {
+    public async create (tableSchema: LSTableConfig): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.db.createTable(tableSchema, (err, data) => {
                 if (err) return reject(err); 
