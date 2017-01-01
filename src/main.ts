@@ -17,13 +17,13 @@ export interface LSItem {
 }
 
 export class LocalStore {
-    private spawn: ChildProcess;
+    private spawn: ChildProcess | null;
     private testTable: any;
     private db: AWS.DynamoDB;
     private client: AWS.DynamoDB.DocumentClient;
 
     /**
-     * 
+     * Provides schema operation methods
      * 
      * @type {LocalStoreSchema}
      * @memberOf LocalStore
@@ -31,7 +31,7 @@ export class LocalStore {
     public schema: LocalStoreSchema;
     
     /**
-     * 
+     * Provides data operation methods
      * 
      * @type {LocalStoreData}
      * @memberOf LocalStore
@@ -51,19 +51,21 @@ export class LocalStore {
     }
     
     /**
-     * 
+     * Active DynamoDB process information
      * 
      * @readonly
      * @private
      * @type {ChildProcess}
      * @memberOf LocalStore
      */
-    private get process(): ChildProcess {
-        return this.spawn;
+    private get process(): ChildProcess | null {
+        if (!!this.spawn)
+            return this.spawn;
+        return null;
     }
     
     /**
-     * 
+     * Configure AWS
      * 
      * @param {any} configuration
      * 
@@ -78,7 +80,7 @@ export class LocalStore {
     }
 
     /**
-     * 
+     * Launch DynamoDB instance
      * 
      * @param {number} [port=8000]
      * @returns {Promise<void>}
@@ -90,21 +92,24 @@ export class LocalStore {
     }
 
     /**
-     * 
+     * Kill active DynamoDB instance
      * 
      * @returns {Promise<void>}
      * 
      * @memberOf LocalStore
      */
     public async kill (): Promise<void> {
-        await this.spawn.kill();
+        if (!!this.spawn)
+            await this.spawn.kill();
+        this.spawn = null;
     }
 
     /**
+     * Test if connection is active is compable of creating a table 
      * 
-     * 
+     * @param {boolean} [extended=false] Test data access too
      * @returns {Promise<boolean>}
-     * !!
+     * 
      * @memberOf LocalStore
      */
     public async test (extended: boolean = false): Promise<boolean> {

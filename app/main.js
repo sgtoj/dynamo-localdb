@@ -23,7 +23,7 @@ class LocalStore {
         this.testTable = testTableConfig;
     }
     /**
-     *
+     * Active DynamoDB process information
      *
      * @readonly
      * @private
@@ -31,10 +31,12 @@ class LocalStore {
      * @memberOf LocalStore
      */
     get process() {
-        return this.spawn;
+        if (!!this.spawn)
+            return this.spawn;
+        return null;
     }
     /**
-     *
+     * Configure AWS
      *
      * @param {any} configuration
      *
@@ -48,7 +50,7 @@ class LocalStore {
         this.data = new LocalStoreData(this.db, this.client);
     }
     /**
-     *
+     * Launch DynamoDB instance
      *
      * @param {number} [port=8000]
      * @returns {Promise<void>}
@@ -61,7 +63,7 @@ class LocalStore {
         });
     }
     /**
-     *
+     * Kill active DynamoDB instance
      *
      * @returns {Promise<void>}
      *
@@ -69,14 +71,17 @@ class LocalStore {
      */
     kill() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.spawn.kill();
+            if (!!this.spawn)
+                yield this.spawn.kill();
+            this.spawn = null;
         });
     }
     /**
+     * Test if connection is active is compable of creating a table
      *
-     *
+     * @param {boolean} [extended=false] Test data access too
      * @returns {Promise<boolean>}
-     * !!
+     *
      * @memberOf LocalStore
      */
     test(extended = false) {
@@ -84,9 +89,9 @@ class LocalStore {
             const table = testTableConfig.schemas[0];
             const data = testTableConfig.data[table.TableName];
             yield this.schema.create(table);
-            const result = extended ? yield this.testData(table.TableName, data) : yield this.testSchema(table.TableName);
+            const result = extended ? yield this.testData(table.TableName, data) : yield this.testSchema(table);
             if (result)
-                yield this.schema.delete(table.TableName);
+                yield this.schema.delete(table);
             return result;
         });
     }

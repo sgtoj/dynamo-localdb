@@ -1,8 +1,6 @@
 import * as AWS from "aws-sdk";
-export interface LocalStoreDataConfig {
-    TableName: string;
-    Item: any;
-}
+export declare type LSConfig = AWS.DynamoDB.ClientConfiguration;
+export declare type LSTableConfig = AWS.DynamoDB.CreateTableInput;
 export interface LSItem {
     [key: string]: AWS.DynamoDB.AttributeValue;
 }
@@ -12,14 +10,14 @@ export declare class LocalStore {
     private db;
     private client;
     /**
-     *
+     * Provides schema operation methods
      *
      * @type {LocalStoreSchema}
      * @memberOf LocalStore
      */
     schema: LocalStoreSchema;
     /**
-     *
+     * Provides data operation methods
      *
      * @type {LocalStoreData}
      * @memberOf LocalStore
@@ -32,9 +30,9 @@ export declare class LocalStore {
      *
      * @memberOf LocalStore
      */
-    constructor(config: any);
+    constructor(config: LSConfig);
     /**
-     *
+     * Active DynamoDB process information
      *
      * @readonly
      * @private
@@ -43,15 +41,15 @@ export declare class LocalStore {
      */
     private readonly process;
     /**
-     *
+     * Configure AWS
      *
      * @param {any} configuration
      *
      * @memberOf LocalStore
      */
-    config(configuration: any): void;
+    config(configuration: LSConfig): void;
     /**
-     *
+     * Launch DynamoDB instance
      *
      * @param {number} [port=8000]
      * @returns {Promise<void>}
@@ -60,7 +58,7 @@ export declare class LocalStore {
      */
     launch(port?: number): Promise<void>;
     /**
-     *
+     * Kill active DynamoDB instance
      *
      * @returns {Promise<void>}
      *
@@ -68,15 +66,16 @@ export declare class LocalStore {
      */
     kill(): Promise<void>;
     /**
+     * Test if connection is active is compable of creating a table
      *
-     *
+     * @param {boolean} [extended=false] Test data access too
      * @returns {Promise<boolean>}
-     * !!
+     *
      * @memberOf LocalStore
      */
     test(extended?: boolean): Promise<boolean>;
-    testData(table: string, tableData: any): Promise<boolean>;
-    testSchema(table: string): Promise<boolean>;
+    private testData(table, tableData);
+    private testSchema(table);
 }
 export declare class LocalStoreSchema {
     private db;
@@ -96,7 +95,7 @@ export declare class LocalStoreSchema {
      *
      * @memberOf LocalStoreSchema
      */
-    create(tableSchema: any): Promise<void>;
+    create(tableSchema: LSTableConfig): Promise<void>;
     /**
      *
      *
