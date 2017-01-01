@@ -2,7 +2,7 @@ import * as AWS from "aws-sdk";
 import * as dynamodb from "dynamodb-local";
 import { ChildProcess } from "child_process";
 
-const testTableConfig = require("../data/testconfig");
+const testTableConfig = require("../data/tmptable");
 
 export type LSConfig = AWS.DynamoDB.ClientConfiguration;
 export type LSTableConfig = AWS.DynamoDB.CreateTableInput;
@@ -17,26 +17,13 @@ export interface LSItem {
 }
 
 export class LocalStore {
-    private spawn: ChildProcess | null;
+    private _schema: LocalStoreSchema;
+    private _data: LocalStoreData;
+    private _process: ChildProcess | null;
     private testTable: any;
     private db: AWS.DynamoDB;
     private client: AWS.DynamoDB.DocumentClient;
 
-    /**
-     * Provides schema operation methods
-     * 
-     * @type {LocalStoreSchema}
-     * @memberOf LocalStore
-     */
-    public schema: LocalStoreSchema;
-    
-    /**
-     * Provides data operation methods
-     * 
-     * @type {LocalStoreData}
-     * @memberOf LocalStore
-     */
-    public data: LocalStoreData;
 
     /**
      * Creates an instance of LocalStore.
@@ -45,11 +32,22 @@ export class LocalStore {
      * 
      * @memberOf LocalStore
      */
-    constructor(config: LSConfig) {
-        this.config(config);
+    constructor(config?: LSConfig) {
+        if (!!config)        
+            this.config(config);
         this.testTable = testTableConfig;
     }
-    
+
+    /**
+     * Provides data operation methods
+     * 
+     * @type {LocalStoreData}
+     * @memberOf LocalStore
+     */
+    public get data(): LocalStoreData {
+        return this._data;
+    }
+
     /**
      * Active DynamoDB process information
      * 
@@ -59,9 +57,23 @@ export class LocalStore {
      * @memberOf LocalStore
      */
     private get process(): ChildProcess | null {
-        if (!!this.spawn)
-            return this.spawn;
+        if (!!this._process)
+            return this._process;
         return null;
+    }
+
+    private get ready(): boolean {
+        return !!this.db && !!this.client && !!this.data && !!this.schema;
+    }
+
+    /**
+     * Provides schema operation methods
+     * 
+     * @type {LocalStoreSchema}
+     * @memberOf LocalStore
+     */
+    public get schema(): LocalStoreSchema {
+        return this._schema;
     }
     
     /**
@@ -75,8 +87,8 @@ export class LocalStore {
         AWS.config.update(configuration);
         this.db = new AWS.DynamoDB();
         this.client = new AWS.DynamoDB.DocumentClient();
-        this.schema = new LocalStoreSchema(this.db);
-        this.data = new LocalStoreData(this.db, this.client);
+        this._schema = new LocalStoreSchema(this.db);
+        this._data = new LocalStoreData(this.db, this.client);
     }
 
     /**
@@ -88,7 +100,7 @@ export class LocalStore {
      * @memberOf LocalStore
      */
     public async launch (port: number = 8000): Promise<void> {
-        this.spawn = await dynamodb.launch(port, null, ["sharedDb"]);
+        this._process = await dynamodb.launch(port, null, ["sharedDb"]);
     }
 
     /**
@@ -99,9 +111,9 @@ export class LocalStore {
      * @memberOf LocalStore
      */
     public async kill (): Promise<void> {
-        if (!!this.spawn)
-            await this.spawn.kill();
-        this.spawn = null;
+        if (!!this._process)
+            await this._process.kill();
+        this._process = null;
     }
 
     /**
@@ -150,7 +162,7 @@ export class LocalStoreSchema {
     }
  
     /**
-     * 
+     * Create a new schema
      * 
      * @param {any} tableSchema
      * @returns {Promise<void>}
@@ -167,7 +179,7 @@ export class LocalStoreSchema {
     }
     
     /**
-     * 
+     * Delete existing schema
      * 
      * @param {string} tableName
      * @returns {Promise<void>}
@@ -185,7 +197,7 @@ export class LocalStoreSchema {
     }
 
     /**
-     * 
+     * List of current tables
      * 
      * @returns {Promise<string[]>}
      * 
@@ -220,9 +232,9 @@ export class LocalStoreData {
     }
 
     /**
+     * Insert a new document
      * 
-     * 
-     * @param {string} table
+     * @param {string} [table] Name of the table
      * @param {LSItem} data
      * @returns {Promise<void>}
      * 
@@ -239,9 +251,9 @@ export class LocalStoreData {
     }
 
      /**
+      * Insert an array of documents
       * 
-      * 
-      * @param {string} table
+      * @param {string} [table] Name of the table
       * @param {LSItem[]} data
       * @returns {Promise<void>}
       * 
@@ -257,7 +269,7 @@ export class LocalStoreData {
      }
 
     /**
-     * 
+     * Retrieves all the content of a table
      * 
      * @param {string} table
      * @returns {Promise<LSItem[]>}
@@ -275,7 +287,7 @@ export class LocalStoreData {
     }
 
     /**
-     * 
+     * Number of document in given table
      * 
      * @param {string} table
      * @returns {Promise<number>}

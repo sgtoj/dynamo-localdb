@@ -5,24 +5,12 @@ export interface LSItem {
     [key: string]: AWS.DynamoDB.AttributeValue;
 }
 export declare class LocalStore {
-    private spawn;
+    private _schema;
+    private _data;
+    private _process;
     private testTable;
     private db;
     private client;
-    /**
-     * Provides schema operation methods
-     *
-     * @type {LocalStoreSchema}
-     * @memberOf LocalStore
-     */
-    schema: LocalStoreSchema;
-    /**
-     * Provides data operation methods
-     *
-     * @type {LocalStoreData}
-     * @memberOf LocalStore
-     */
-    data: LocalStoreData;
     /**
      * Creates an instance of LocalStore.
      *
@@ -30,7 +18,14 @@ export declare class LocalStore {
      *
      * @memberOf LocalStore
      */
-    constructor(config: LSConfig);
+    constructor(config?: LSConfig);
+    /**
+     * Provides data operation methods
+     *
+     * @type {LocalStoreData}
+     * @memberOf LocalStore
+     */
+    readonly data: LocalStoreData;
     /**
      * Active DynamoDB process information
      *
@@ -40,6 +35,14 @@ export declare class LocalStore {
      * @memberOf LocalStore
      */
     private readonly process;
+    private readonly ready;
+    /**
+     * Provides schema operation methods
+     *
+     * @type {LocalStoreSchema}
+     * @memberOf LocalStore
+     */
+    readonly schema: LocalStoreSchema;
     /**
      * Configure AWS
      *
@@ -88,7 +91,7 @@ export declare class LocalStoreSchema {
      */
     constructor(dynamodb: AWS.DynamoDB);
     /**
-     *
+     * Create a new schema
      *
      * @param {any} tableSchema
      * @returns {Promise<void>}
@@ -97,7 +100,7 @@ export declare class LocalStoreSchema {
      */
     create(tableSchema: LSTableConfig): Promise<void>;
     /**
-     *
+     * Delete existing schema
      *
      * @param {string} tableName
      * @returns {Promise<void>}
@@ -106,7 +109,7 @@ export declare class LocalStoreSchema {
      */
     delete(tableName: string): Promise<void>;
     /**
-     *
+     * List of current tables
      *
      * @returns {Promise<string[]>}
      *
@@ -127,9 +130,9 @@ export declare class LocalStoreData {
      */
     constructor(db: AWS.DynamoDB, client: AWS.DynamoDB.DocumentClient);
     /**
+     * Insert a new document
      *
-     *
-     * @param {string} table
+     * @param {string} [table] Name of the table
      * @param {LSItem} data
      * @returns {Promise<void>}
      *
@@ -137,9 +140,9 @@ export declare class LocalStoreData {
      */
     insert(table: string, data: LSItem): Promise<void>;
     /**
+     * Insert an array of documents
      *
-     *
-     * @param {string} table
+     * @param {string} [table] Name of the table
      * @param {LSItem[]} data
      * @returns {Promise<void>}
      *
@@ -147,7 +150,7 @@ export declare class LocalStoreData {
      */
     import(table: string, data: LSItem[]): Promise<void>;
     /**
-     *
+     * Retrieves all the content of a table
      *
      * @param {string} table
      * @returns {Promise<LSItem[]>}
@@ -156,7 +159,7 @@ export declare class LocalStoreData {
      */
     read(table: string): Promise<LSItem[]>;
     /**
-     *
+     * Number of document in given table
      *
      * @param {string} table
      * @returns {Promise<number>}

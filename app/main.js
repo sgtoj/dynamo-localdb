@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const AWS = require("aws-sdk");
 const dynamodb = require("dynamodb-local");
-const testTableConfig = require("../data/testconfig");
+const testTableConfig = require("../data/tmptable");
 class LocalStore {
     /**
      * Creates an instance of LocalStore.
@@ -19,8 +19,18 @@ class LocalStore {
      * @memberOf LocalStore
      */
     constructor(config) {
-        this.config(config);
+        if (!!config)
+            this.config(config);
         this.testTable = testTableConfig;
+    }
+    /**
+     * Provides data operation methods
+     *
+     * @type {LocalStoreData}
+     * @memberOf LocalStore
+     */
+    get data() {
+        return this._data;
     }
     /**
      * Active DynamoDB process information
@@ -31,9 +41,21 @@ class LocalStore {
      * @memberOf LocalStore
      */
     get process() {
-        if (!!this.spawn)
-            return this.spawn;
+        if (!!this._process)
+            return this._process;
         return null;
+    }
+    get ready() {
+        return !!this.db && !!this.client && !!this.data && !!this.schema;
+    }
+    /**
+     * Provides schema operation methods
+     *
+     * @type {LocalStoreSchema}
+     * @memberOf LocalStore
+     */
+    get schema() {
+        return this._schema;
     }
     /**
      * Configure AWS
@@ -46,8 +68,8 @@ class LocalStore {
         AWS.config.update(configuration);
         this.db = new AWS.DynamoDB();
         this.client = new AWS.DynamoDB.DocumentClient();
-        this.schema = new LocalStoreSchema(this.db);
-        this.data = new LocalStoreData(this.db, this.client);
+        this._schema = new LocalStoreSchema(this.db);
+        this._data = new LocalStoreData(this.db, this.client);
     }
     /**
      * Launch DynamoDB instance
@@ -59,7 +81,7 @@ class LocalStore {
      */
     launch(port = 8000) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.spawn = yield dynamodb.launch(port, null, ["sharedDb"]);
+            this._process = yield dynamodb.launch(port, null, ["sharedDb"]);
         });
     }
     /**
@@ -71,9 +93,9 @@ class LocalStore {
      */
     kill() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!!this.spawn)
-                yield this.spawn.kill();
-            this.spawn = null;
+            if (!!this._process)
+                yield this._process.kill();
+            this._process = null;
         });
     }
     /**
@@ -122,7 +144,7 @@ class LocalStoreSchema {
         this.db = dynamodb;
     }
     /**
-     *
+     * Create a new schema
      *
      * @param {any} tableSchema
      * @returns {Promise<void>}
@@ -141,7 +163,7 @@ class LocalStoreSchema {
         });
     }
     /**
-     *
+     * Delete existing schema
      *
      * @param {string} tableName
      * @returns {Promise<void>}
@@ -161,7 +183,7 @@ class LocalStoreSchema {
         });
     }
     /**
-     *
+     * List of current tables
      *
      * @returns {Promise<string[]>}
      *
@@ -194,9 +216,9 @@ class LocalStoreData {
         this.client = client;
     }
     /**
+     * Insert a new document
      *
-     *
-     * @param {string} table
+     * @param {string} [table] Name of the table
      * @param {LSItem} data
      * @returns {Promise<void>}
      *
@@ -215,9 +237,9 @@ class LocalStoreData {
         });
     }
     /**
+     * Insert an array of documents
      *
-     *
-     * @param {string} table
+     * @param {string} [table] Name of the table
      * @param {LSItem[]} data
      * @returns {Promise<void>}
      *
@@ -233,7 +255,7 @@ class LocalStoreData {
         });
     }
     /**
-     *
+     * Retrieves all the content of a table
      *
      * @param {string} table
      * @returns {Promise<LSItem[]>}
@@ -254,7 +276,7 @@ class LocalStoreData {
         });
     }
     /**
-     *
+     * Number of document in given table
      *
      * @param {string} table
      * @returns {Promise<number>}
