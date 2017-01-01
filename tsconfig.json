@@ -1,24 +1,26 @@
 {
     "compilerOptions": {
         "module": "commonjs",
-        "target": "es6",
+        "target": "es2016",
         "noLib": false,
         "declaration": true,
-        "emitDecoratorMetadata": true,
         "declarationDir": "declaration",
         "allowJs": false,
         "pretty": true,
         "watch": false,
         "sourceMap": true,
         "strictNullChecks": true,
-        "outDir": "lib"
+        "outDir": "app",
+        "traceResolution": false,
+        "alwaysStrict": true
     },
     "exclude": [
         "declaration/",
         "node_modules/",
-        "lib/",
+        "app/",
+        "scripts/",
         "test/",
         "tmp/",
-        "*.js"
+        "**/*.js"
     ]
 }

@@ -1,11 +1,11 @@
 {
     "files.exclude": {
+        "**/*.map": true,
         "**/.git": true,
         "**/.svn": true,
         "**/.hg": true,
         "**/.DS_Store": true,
         "node_modules/": true,
-        "lib/": true,
         "tmp/": true
     },
 
