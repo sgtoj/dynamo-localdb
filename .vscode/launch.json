@@ -8,9 +8,11 @@
             "name": "Launch - Test Script",
             "type": "node2",
             "request": "launch",
+            "preLaunchTask": "compile",
             "program": "${workspaceRoot}/scripts/test.js",
             "cwd": "${workspaceRoot}",
             "outFiles": [],
+            "stopOnEntry": false,
             "sourceMaps": true,
             "smartStep": true
         }
