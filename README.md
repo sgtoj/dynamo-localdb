@@ -9,3 +9,7 @@ allow those developers, working DynamoDB projects, to quickly setup and reset
 the database.
 
 
+## Troubleshooting
+
+- By default `stdio` is set to `ignore`. Change it to `inherit` in the configuration options.
+- If `mising 'server' JVM...' error, follow these [steps](http://stackoverflow.com/a/18123162/225522) to resolve.
