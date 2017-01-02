@@ -1,6 +1,16 @@
 import * as AWS from "aws-sdk";
-export declare type LSConfig = AWS.DynamoDB.ClientConfiguration;
+export declare type LSAWSConfig = AWS.DynamoDB.ClientConfiguration;
 export declare type LSTableConfig = AWS.DynamoDB.CreateTableInput;
+export declare type stdio = "pipe" | "ignore" | "inherit";
+export declare type LSDynamoDBConfig = {
+    port: number;
+    deteched?: boolean;
+    stdio?: stdio | stdio[];
+    heap?: string;
+    cors?: string | string[];
+    sharedDb?: boolean;
+    dir?: string | null;
+};
 export interface LSItem {
     [key: string]: AWS.DynamoDB.AttributeValue;
 }
@@ -8,26 +18,28 @@ export declare class LocalStore {
     private _schema;
     private _data;
     private _process;
+    private dbConfig;
     private testTable;
     private db;
     private client;
     /**
      * Creates an instance of LocalStore.
      *
-     * @param {any} config
+     * @param {LSAWSConfig} awsConfig Configuration options for the local AWS client.
+     * @param {LSDynamoDBConfig} dbConfig Configuration options for DynamoDB and its spawned process.
      *
      * @memberOf LocalStore
      */
-    constructor(config?: LSConfig);
+    constructor(awsConfig: LSAWSConfig, dbConfig?: LSDynamoDBConfig);
     /**
-     * Provides data operation methods
+     * Provides data operation methods.
      *
      * @type {LocalStoreData}
      * @memberOf LocalStore
      */
     readonly data: LocalStoreData;
     /**
-     * Active DynamoDB process information
+     * Active DynamoDB process information.
      *
      * @readonly
      * @private
@@ -37,7 +49,7 @@ export declare class LocalStore {
     private readonly process;
     private readonly ready;
     /**
-     * Provides schema operation methods
+     * Provides schema operation methods.
      *
      * @type {LocalStoreSchema}
      * @memberOf LocalStore
@@ -46,11 +58,12 @@ export declare class LocalStore {
     /**
      * Configure AWS
      *
-     * @param {any} configuration
+     * @param {LSAWSConfig} awsConfig Configuration options for the local AWS client.
+     * @param {LSDynamoDBConfig} dbConfig Configuration options for DynamoDB and its spawned process.
      *
      * @memberOf LocalStore
      */
-    config(configuration: LSConfig): void;
+    config(awsConfig: LSAWSConfig, dbConfig?: LSDynamoDBConfig): void;
     /**
      * Launch DynamoDB instance
      *
@@ -59,7 +72,7 @@ export declare class LocalStore {
      *
      * @memberOf LocalStore
      */
-    launch(port?: number): Promise<void>;
+    launch(): Promise<void>;
     /**
      * Kill active DynamoDB instance
      *

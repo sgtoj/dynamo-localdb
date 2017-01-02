@@ -1,9 +1,15 @@
+"use strict";
 let LocalDB = require("../app/main");
 
 let config = {
     "region": "us-east-1",
     "endpoint": "http://localhost:8000"
 }
+
+process.on("error", err => {
+    console.error(err);
+});
+
 
 let db = new LocalDB.LocalStore(config);
 

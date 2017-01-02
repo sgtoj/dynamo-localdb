@@ -15,12 +15,15 @@
   "author": "Brian Ojeda",
   "license": "MIT",
   "devDependencies": {
+    "@types/mocha": "^2.2.35",
     "@types/node": "^6.0.55",
+    "chai": "^3.5.0",
+    "mocha": "^3.2.0",
     "tslint": "^4.2.0",
     "typescript": "^2.1.4"
   },
   "dependencies": {
     "aws-sdk": "^2.7.20",
-    "dynamodb-local": "0.0.12"
+    "local-dynamo": "^0.4.1"
   }
 }

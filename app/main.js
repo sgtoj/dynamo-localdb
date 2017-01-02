@@ -8,23 +8,24 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const AWS = require("aws-sdk");
-const dynamodb = require("dynamodb-local");
+const dynamodb = require("local-dynamo");
 const testTableConfig = require("../data/tmptable");
 class LocalStore {
     /**
      * Creates an instance of LocalStore.
      *
-     * @param {any} config
+     * @param {LSAWSConfig} awsConfig Configuration options for the local AWS client.
+     * @param {LSDynamoDBConfig} dbConfig Configuration options for DynamoDB and its spawned process.
      *
      * @memberOf LocalStore
      */
-    constructor(config) {
-        if (!!config)
-            this.config(config);
+    constructor(awsConfig, dbConfig) {
+        this.dbConfig = dbConfig || { port: 8000, dir: null, sharedDb: true, stdio: "ignore", deteched: false };
+        this.config(awsConfig, dbConfig);
         this.testTable = testTableConfig;
     }
     /**
-     * Provides data operation methods
+     * Provides data operation methods.
      *
      * @type {LocalStoreData}
      * @memberOf LocalStore
@@ -33,7 +34,7 @@ class LocalStore {
         return this._data;
     }
     /**
-     * Active DynamoDB process information
+     * Active DynamoDB process information.
      *
      * @readonly
      * @private
@@ -49,7 +50,7 @@ class LocalStore {
         return !!this.db && !!this.client && !!this.data && !!this.schema;
     }
     /**
-     * Provides schema operation methods
+     * Provides schema operation methods.
      *
      * @type {LocalStoreSchema}
      * @memberOf LocalStore
@@ -60,12 +61,15 @@ class LocalStore {
     /**
      * Configure AWS
      *
-     * @param {any} configuration
+     * @param {LSAWSConfig} awsConfig Configuration options for the local AWS client.
+     * @param {LSDynamoDBConfig} dbConfig Configuration options for DynamoDB and its spawned process.
      *
      * @memberOf LocalStore
      */
-    config(configuration) {
-        AWS.config.update(configuration);
+    config(awsConfig, dbConfig) {
+        if (!!dbConfig)
+            this.dbConfig = dbConfig;
+        AWS.config.update(awsConfig);
         this.db = new AWS.DynamoDB();
         this.client = new AWS.DynamoDB.DocumentClient();
         this._schema = new LocalStoreSchema(this.db);
@@ -79,9 +83,18 @@ class LocalStore {
      *
      * @memberOf LocalStore
      */
-    launch(port = 8000) {
+    launch() {
         return __awaiter(this, void 0, void 0, function* () {
-            this._process = yield dynamodb.launch(port, null, ["sharedDb"]);
+            const self = this;
+            yield new Promise((resolve, reject) => {
+                try {
+                    self._process = dynamodb.launch(this.dbConfig);
+                    resolve();
+                }
+                catch (err) {
+                    reject(err);
+                }
+            });
         });
     }
     /**
@@ -113,7 +126,7 @@ class LocalStore {
             yield this.schema.create(table);
             const result = extended ? yield this.testData(table.TableName, data) : yield this.testSchema(table);
             if (result)
-                yield this.schema.delete(table);
+                yield this.schema.delete(table.TableName);
             return result;
         });
     }
@@ -266,8 +279,7 @@ class LocalStoreData {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
                 let tableInfo = { TableName: table };
-                return this.db.scan(tableInfo, (err, data) => {
-                    0;
+                this.db.scan(tableInfo, (err, data) => {
                     if (err)
                         return reject(err);
                     resolve(data.Items);
@@ -287,8 +299,7 @@ class LocalStoreData {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
                 let tableInfo = { TableName: table };
-                return this.db.scan(tableInfo, (err, data) => {
-                    0;
+                this.db.scan(tableInfo, (err, data) => {
                     if (err)
                         return reject(err);
                     resolve(data.Count);
