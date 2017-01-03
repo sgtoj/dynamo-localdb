@@ -6,4 +6,4 @@ let config = {
 }
 
 let db = new LocalDB.LocalStore(config);
-db.launch();
+db.start();
