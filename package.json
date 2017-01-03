@@ -10,7 +10,8 @@
   "scripts": {
     "compile": "node ./node_modules/typescript/bin/tsc",
     "start": "node ./scripts/start.js",
-    "simple-test": "npm run compile && node ./scripts/test.js"
+    "simple-test": "npm run compile && node ./scripts/test.js",
+    "test": "node ./node_modules/mocha/bin/mocha tests/**/*Test.js --reporter spec"
   },
   "author": "Brian Ojeda",
   "license": "MIT",
