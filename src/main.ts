@@ -3,6 +3,7 @@ import * as dynamodb from "local-dynamo";
 import { ChildProcess } from "child_process";
 
 const testTableConfig = require("../data/tmptable");
+const defaultConfig = require("../data/defaults");
 
 interface LocalStoreDataConfig {
     TableName: string;
@@ -57,7 +58,7 @@ export class LocalStore {
      * @memberOf LocalStore
      */
     public async start (): Promise<void> {
-        this.server.start();
+        await this.server.start();
     }
 
     /**
@@ -68,7 +69,7 @@ export class LocalStore {
      * @memberOf LocalStore
      */
     public async kill (): Promise<void> {
-        this.server.kill();
+        await this.server.kill();
     }
 
     /**
@@ -264,8 +265,9 @@ export class LocalStoreClient {
      * @memberOf LocalStore
      */
     constructor(config?: LSAWSConfig) {
-        this.config = config || { region: "us-east-1", endpoint: "http://localhost:8000" }
+        this.config = config || defaultConfig.client;
         this.testTable = testTableConfig;
+        this.setup();
     }
 
     /**
@@ -299,12 +301,9 @@ export class LocalStoreClient {
      * 
      * @memberOf LocalStore
      */
-    public configure (awsConfig: LSAWSConfig): void {
-        AWS.config.update(awsConfig);
-        this.dbClient = new AWS.DynamoDB();
-        this.dbDocClient = new AWS.DynamoDB.DocumentClient();
-        this._schema = new LocalStoreSchemaClient(this.dbClient);
-        this._data = new LocalStoreDataClient(this.dbClient, this.dbDocClient);
+    public configure (config: LSAWSConfig): void {
+        this.config = config;
+        this.setup();
     }
 
     /**
@@ -336,6 +335,14 @@ export class LocalStoreClient {
         return tables.some(t => { return t === table; });
     }
 
+    private setup() {
+        AWS.config.update(this.config);
+        this.dbClient = new AWS.DynamoDB();
+        this.dbDocClient = new AWS.DynamoDB.DocumentClient();
+        this._schema = new LocalStoreSchemaClient(this.dbClient);
+        this._data = new LocalStoreDataClient(this.dbClient, this.dbDocClient);
+    }
+
 }
 
 export class LocalStoreServer {
@@ -351,7 +358,8 @@ export class LocalStoreServer {
      * @memberOf LocalStore
      */
     constructor(config?: LSDynamoDBConfig) {
-        this.config = config || { port: 8000, dir: null, sharedDb: true, stdio: "ignore", deteched: false };
+        this.dynamodb = dynamodb;
+        this.config = config || defaultConfig.server;
         this.configure(config);
     }
 
@@ -405,7 +413,7 @@ export class LocalStoreServer {
         const self = this;
         await new Promise<void> ((resolve, reject) => {
             try {
-                self._process = dynamodb.launch(this.config);
+                self._process = this.dynamodb.launch(this.config);
                 resolve();
             } catch (err) {
                 reject(err);

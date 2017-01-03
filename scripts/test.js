@@ -13,7 +13,7 @@ process.on("error", err => {
 
 let db = new LocalDB.LocalStore(config);
 
-db.launch().then(() =>{
+db.start().then(() =>{
     console.log(`Database has started.`);
     return db.test(true);
 }).then(result => {

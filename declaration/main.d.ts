@@ -1,4 +1,6 @@
+/// <reference types="node" />
 import * as AWS from "aws-sdk";
+import { ChildProcess } from "child_process";
 export declare type LSAWSConfig = AWS.DynamoDB.ClientConfiguration;
 export declare type LSTableConfig = AWS.DynamoDB.CreateTableInput;
 export declare type stdio = "pipe" | "ignore" | "inherit";
@@ -15,13 +17,8 @@ export interface LSItem {
     [key: string]: AWS.DynamoDB.AttributeValue;
 }
 export declare class LocalStore {
-    private _schema;
-    private _data;
-    private _process;
-    private dbConfig;
-    private testTable;
-    private db;
     private client;
+    private server;
     /**
      * Creates an instance of LocalStore.
      *
@@ -30,51 +27,19 @@ export declare class LocalStore {
      *
      * @memberOf LocalStore
      */
-    constructor(awsConfig: LSAWSConfig, dbConfig?: LSDynamoDBConfig);
-    /**
-     * Provides data operation methods.
-     *
-     * @type {LocalStoreData}
-     * @memberOf LocalStore
-     */
-    readonly data: LocalStoreData;
-    /**
-     * Active DynamoDB process information.
-     *
-     * @readonly
-     * @private
-     * @type {ChildProcess}
-     * @memberOf LocalStore
-     */
-    private readonly process;
+    constructor();
     private readonly ready;
     /**
-     * Provides schema operation methods.
-     *
-     * @type {LocalStoreSchema}
-     * @memberOf LocalStore
-     */
-    readonly schema: LocalStoreSchema;
-    /**
-     * Configure AWS
-     *
-     * @param {LSAWSConfig} awsConfig Configuration options for the local AWS client.
-     * @param {LSDynamoDBConfig} dbConfig Configuration options for DynamoDB and its spawned process.
-     *
-     * @memberOf LocalStore
-     */
-    config(awsConfig: LSAWSConfig, dbConfig?: LSDynamoDBConfig): void;
-    /**
-     * Launch DynamoDB instance
+     * Starts DynamoDB server instance.
      *
      * @param {number} [port=8000]
      * @returns {Promise<void>}
      *
      * @memberOf LocalStore
      */
-    launch(): Promise<void>;
+    start(): Promise<void>;
     /**
-     * Kill active DynamoDB instance
+     * Kill active DynamoDB server instance.
      *
      * @returns {Promise<void>}
      *
@@ -82,18 +47,16 @@ export declare class LocalStore {
      */
     kill(): Promise<void>;
     /**
-     * Test if connection is active is compable of creating a table
+     * Test if connection is active is compable of creating a table.
      *
-     * @param {boolean} [extended=false] Test data access too
+     * @param {boolean} [extended=false] Test data access too.
      * @returns {Promise<boolean>}
      *
      * @memberOf LocalStore
      */
     test(extended?: boolean): Promise<boolean>;
-    private testData(table, tableData);
-    private testSchema(table);
 }
-export declare class LocalStoreSchema {
+export declare class LocalStoreSchemaClient {
     private db;
     /**
      * Creates an instance of LocalStoreSchema.
@@ -106,7 +69,7 @@ export declare class LocalStoreSchema {
     /**
      * Create a new schema
      *
-     * @param {any} tableSchema
+     * @param {LSTableConfig} tableSchema
      * @returns {Promise<void>}
      *
      * @memberOf LocalStoreSchema
@@ -130,7 +93,7 @@ export declare class LocalStoreSchema {
      */
     list(): Promise<string[]>;
 }
-export declare class LocalStoreData {
+export declare class LocalStoreDataClient {
     private db;
     private client;
     /**
@@ -180,4 +143,111 @@ export declare class LocalStoreData {
      * @memberOf LocalStoreData
      */
     count(table: string): Promise<number>;
+}
+export declare class LocalStoreClient {
+    private _schema;
+    private _data;
+    private config;
+    private testTable;
+    private dbClient;
+    private dbDocClient;
+    /**
+     * Creates an instance of LocalStore.
+     *
+     * @param {LSAWSConfig} awsConfig Configuration options for the local AWS client.
+     *
+     * @memberOf LocalStore
+     */
+    constructor(config?: LSAWSConfig);
+    /**
+     * Provides data operation methods.
+     *
+     * @type {LocalStoreData}
+     * @memberOf LocalStore
+     */
+    readonly data: LocalStoreDataClient;
+    readonly ready: boolean;
+    /**
+     * Provides schema operation methods.
+     *
+     * @type {LocalStoreSchema}
+     * @memberOf LocalStore
+     */
+    readonly schema: LocalStoreSchemaClient;
+    /**
+     * Configure AWS
+     *
+     * @param {LSAWSConfig} awsConfig Configuration options for the local AWS client.
+     *
+     * @memberOf LocalStore
+     */
+    configure(config: LSAWSConfig): void;
+    /**
+     * Test if connection is active is compable of creating a table
+     *
+     * @param {boolean} [extended=false] Test data access too
+     * @returns {Promise<boolean>}
+     *
+     * @memberOf LocalStore
+     */
+    test(extended?: boolean): Promise<boolean>;
+    private testData(table, tableData);
+    private testSchema(table);
+    private setup();
+}
+export declare class LocalStoreServer {
+    private _process;
+    private config;
+    private dynamodb;
+    /**
+     * Creates an instance of LocalStore.
+     *
+     * @param {LSDynamoDBConfig} config Configuration options for DynamoDB and its spawned process.
+     *
+     * @memberOf LocalStore
+     */
+    constructor(config?: LSDynamoDBConfig);
+    /**
+     * Active DynamoDB process information.
+     *
+     * @readonly
+     * @public
+     * @type {ChildProcess | null}
+     * @memberOf LocalStore
+     */
+    readonly process: ChildProcess | null;
+    /**
+     * Ready state of the server.
+     *
+     * @readonly
+     * @public
+     * @type {boolean}
+     * @memberOf LocalStore
+     */
+    readonly ready: boolean;
+    /**
+     * Configure AWS
+     *
+     * @param {LSDynamoDBConfig} dbConfig Configuration options for DynamoDB and its spawned process.
+     *
+     * @memberOf LocalStore
+     */
+    configure(config?: LSDynamoDBConfig): void;
+    /**
+     * Start DynamoDB instance
+     *
+     * @param {number} [port=8000]
+     * @returns {Promise<void>}
+     *
+     * @memberOf LocalStore
+     */
+    start(): Promise<void>;
+    /**
+     * Kill active DynamoDB instance
+     *
+     * @returns {Promise<void>}
+     *
+     * @memberOf LocalStore
+     */
+    kill(): Promise<void>;
 }

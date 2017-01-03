@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const AWS = require("aws-sdk");
 const dynamodb = require("local-dynamo");
 const testTableConfig = require("../data/tmptable");
+const defaultConfig = require("../data/defaults");
 class LocalStore {
     /**
      * Creates an instance of LocalStore.
@@ -19,86 +20,28 @@ class LocalStore {
      *
      * @memberOf LocalStore
      */
-    constructor(awsConfig, dbConfig) {
-        this.dbConfig = dbConfig || { port: 8000, dir: null, sharedDb: true, stdio: "ignore", deteched: false };
-        this.config(awsConfig, dbConfig);
-        this.testTable = testTableConfig;
-    }
-    /**
-     * Provides data operation methods.
-     *
-     * @type {LocalStoreData}
-     * @memberOf LocalStore
-     */
-    get data() {
-        return this._data;
-    }
-    /**
-     * Active DynamoDB process information.
-     *
-     * @readonly
-     * @private
-     * @type {ChildProcess}
-     * @memberOf LocalStore
-     */
-    get process() {
-        if (!!this._process)
-            return this._process;
-        return null;
+    constructor() {
+        this.client = new LocalStoreClient();
+        this.server = new LocalStoreServer();
     }
     get ready() {
-        return !!this.db && !!this.client && !!this.data && !!this.schema;
+        return this.client.ready && this.server.ready;
     }
     /**
-     * Provides schema operation methods.
-     *
-     * @type {LocalStoreSchema}
-     * @memberOf LocalStore
-     */
-    get schema() {
-        return this._schema;
-    }
-    /**
-     * Configure AWS
-     *
-     * @param {LSAWSConfig} awsConfig Configuration options for the local AWS client.
-     * @param {LSDynamoDBConfig} dbConfig Configuration options for DynamoDB and its spawned process.
-     *
-     * @memberOf LocalStore
-     */
-    config(awsConfig, dbConfig) {
-        if (!!dbConfig)
-            this.dbConfig = dbConfig;
-        AWS.config.update(awsConfig);
-        this.db = new AWS.DynamoDB();
-        this.client = new AWS.DynamoDB.DocumentClient();
-        this._schema = new LocalStoreSchema(this.db);
-        this._data = new LocalStoreData(this.db, this.client);
-    }
-    /**
-     * Launch DynamoDB instance
+     * Starts DynamoDB server instance.
      *
      * @param {number} [port=8000]
      * @returns {Promise<void>}
      *
      * @memberOf LocalStore
      */
-    launch() {
+    start() {
         return __awaiter(this, void 0, void 0, function* () {
-            const self = this;
-            yield new Promise((resolve, reject) => {
-                try {
-                    self._process = dynamodb.launch(this.dbConfig);
-                    resolve();
-                }
-                catch (err) {
-                    reject(err);
-                }
-            });
+            yield this.server.start();
         });
     }
     /**
-     * Kill active DynamoDB instance
+     * Kill active DynamoDB server instance.
      *
      * @returns {Promise<void>}
      *
@@ -106,46 +49,27 @@ class LocalStore {
      */
     kill() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!!this._process)
-                yield this._process.kill();
-            this._process = null;
+            yield this.server.kill();
         });
     }
     /**
-     * Test if connection is active is compable of creating a table
+     * Test if connection is active is compable of creating a table.
      *
-     * @param {boolean} [extended=false] Test data access too
+     * @param {boolean} [extended=false] Test data access too.
      * @returns {Promise<boolean>}
      *
      * @memberOf LocalStore
      */
     test(extended = false) {
         return __awaiter(this, void 0, void 0, function* () {
-            const table = testTableConfig.schemas[0];
-            const data = testTableConfig.data[table.TableName];
-            yield this.schema.create(table);
-            const result = extended ? yield this.testData(table.TableName, data) : yield this.testSchema(table);
-            if (result)
-                yield this.schema.delete(table.TableName);
-            return result;
-        });
-    }
-    testData(table, tableData) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.data.import(table, tableData);
-            const data = yield this.data.read(table);
-            return !!data;
-        });
-    }
-    testSchema(table) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let tables = yield this.schema.list();
-            return tables.some(t => { return t === table; });
+            if (!this.ready)
+                return false;
+            return this.client.test(extended);
         });
     }
 }
 exports.LocalStore = LocalStore;
-class LocalStoreSchema {
+class LocalStoreSchemaClient {
     /**
      * Creates an instance of LocalStoreSchema.
      *
@@ -159,7 +83,7 @@ class LocalStoreSchema {
     /**
      * Create a new schema
      *
-     * @param {any} tableSchema
+     * @param {LSTableConfig} tableSchema
      * @returns {Promise<void>}
      *
      * @memberOf LocalStoreSchema
@@ -214,8 +138,8 @@ class LocalStoreSchema {
         });
     }
 }
-exports.LocalStoreSchema = LocalStoreSchema;
-class LocalStoreData {
+exports.LocalStoreSchemaClient = LocalStoreSchemaClient;
+class LocalStoreDataClient {
     /**
      * Creates an instance of LocalStoreData.
      *
@@ -308,5 +232,177 @@ class LocalStoreData {
         });
     }
 }
-exports.LocalStoreData = LocalStoreData;
+exports.LocalStoreDataClient = LocalStoreDataClient;
+class LocalStoreClient {
+    /**
+     * Creates an instance of LocalStore.
+     *
+     * @param {LSAWSConfig} awsConfig Configuration options for the local AWS client.
+     *
+     * @memberOf LocalStore
+     */
+    constructor(config) {
+        this.config = config || defaultConfig.client;
+        this.testTable = testTableConfig;
+        this.setup();
+    }
+    /**
+     * Provides data operation methods.
+     *
+     * @type {LocalStoreData}
+     * @memberOf LocalStore
+     */
+    get data() {
+        return this._data;
+    }
+    get ready() {
+        return !!this.dbClient && !!this.dbDocClient && !!this.data && !!this.schema;
+    }
+    /**
+     * Provides schema operation methods.
+     *
+     * @type {LocalStoreSchema}
+     * @memberOf LocalStore
+     */
+    get schema() {
+        return this._schema;
+    }
+    /**
+     * Configure AWS
+     *
+     * @param {LSAWSConfig} awsConfig Configuration options for the local AWS client.
+     *
+     * @memberOf LocalStore
+     */
+    configure(config) {
+        this.config = config;
+        this.setup();
+    }
+    /**
+     * Test if connection is active is compable of creating a table
+     *
+     * @param {boolean} [extended=false] Test data access too
+     * @returns {Promise<boolean>}
+     *
+     * @memberOf LocalStore
+     */
+    test(extended = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const table = testTableConfig.schemas[0];
+            const data = testTableConfig.data[table.TableName];
+            yield this.schema.create(table);
+            const result = extended ? yield this.testData(table.TableName, data) : yield this.testSchema(table);
+            if (result)
+                yield this.schema.delete(table.TableName);
+            return result;
+        });
+    }
+    testData(table, tableData) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.data.import(table, tableData);
+            const data = yield this.data.read(table);
+            return !!data;
+        });
+    }
+    testSchema(table) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let tables = yield this.schema.list();
+            return tables.some(t => { return t === table; });
+        });
+    }
+    setup() {
+        AWS.config.update(this.config);
+        this.dbClient = new AWS.DynamoDB();
+        this.dbDocClient = new AWS.DynamoDB.DocumentClient();
+        this._schema = new LocalStoreSchemaClient(this.dbClient);
+        this._data = new LocalStoreDataClient(this.dbClient, this.dbDocClient);
+    }
+}
+exports.LocalStoreClient = LocalStoreClient;
+class LocalStoreServer {
+    /**
+     * Creates an instance of LocalStore.
+     *
+     * @param {LSDynamoDBConfig} config Configuration options for DynamoDB and its spawned process.
+     *
+     * @memberOf LocalStore
+     */
+    constructor(config) {
+        this.dynamodb = dynamodb;
+        this.config = config || defaultConfig.server;
+        this.configure(config);
+    }
+    /**
+     * Active DynamoDB process information.
+     *
+     * @readonly
+     * @public
+     * @type {ChildProcess | null}
+     * @memberOf LocalStore
+     */
+    get process() {
+        if (!!this._process)
+            return this._process;
+        return null;
+    }
+    /**
+     * Ready state of the server.
+     *
+     * @readonly
+     * @public
+     * @type {boolean}
+     * @memberOf LocalStore
+     */
+    get ready() {
+        return !!this.dynamodb && !!this.process;
+    }
+    /**
+     * Configure AWS
+     *
+     * @param {LSDynamoDBConfig} dbConfig Configuration options for DynamoDB and its spawned process.
+     *
+     * @memberOf LocalStore
+     */
+    configure(config) {
+        if (!!config)
+            this.config = config;
+    }
+    /**
+     * Start DynamoDB instance
+     *
+     * @param {number} [port=8000]
+     * @returns {Promise<void>}
+     *
+     * @memberOf LocalStore
+     */
+    start() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const self = this;
+            yield new Promise((resolve, reject) => {
+                try {
+                    self._process = this.dynamodb.launch(this.config);
+                    resolve();
+                }
+                catch (err) {
+                    reject(err);
+                }
+            });
+        });
+    }
+    /**
+     * Kill active DynamoDB instance
+     *
+     * @returns {Promise<void>}
+     *
+     * @memberOf LocalStore
+     */
+    kill() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!!this._process)
+                yield this._process.kill();
+            this._process = null;
+        });
+    }
+}
+exports.LocalStoreServer = LocalStoreServer;
 //# sourceMappingURL=main.js.map
