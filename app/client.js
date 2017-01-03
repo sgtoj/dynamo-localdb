@@ -232,7 +232,7 @@ class LocalStoreClient {
             const table = testTableConfig.schemas[0];
             const data = testTableConfig.data[table.TableName];
             yield this.schema.create(table);
-            const result = extended ? yield this.testData(table.TableName, data) : yield this.testSchema(table);
+            const result = extended ? yield this.testData(table.TableName, data) : yield this.testSchema(table.TableName);
             if (result)
                 yield this.schema.delete(table.TableName);
             return result;

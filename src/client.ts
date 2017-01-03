@@ -11,11 +11,9 @@ interface LocalStoreDataConfig {
 export type LSAWSConfig = AWS.DynamoDB.ClientConfiguration;
 export type LSTableConfig = AWS.DynamoDB.CreateTableInput;
 
-
 export interface LSItem {
     [key: string]: AWS.DynamoDB.AttributeValue;
 }
-
 
 export class LocalStoreSchemaClient {
     private db: AWS.DynamoDB;
@@ -246,7 +244,7 @@ export class LocalStoreClient {
         const table = testTableConfig.schemas[0];
         const data = testTableConfig.data[table.TableName];
         await this.schema.create(table);
-        const result = extended ? await this.testData(table.TableName, data) : await this.testSchema(table);
+        const result = extended ? await this.testData(table.TableName, data) : await this.testSchema(table.TableName);
         if (result)
              await this.schema.delete(table.TableName);
         return result;
