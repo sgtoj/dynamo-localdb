@@ -15,6 +15,28 @@
             "stopOnEntry": false,
             "sourceMaps": true,
             "smartStep": true
+        },
+        {
+            "name": "Launch - Mocha",
+            "type": "node2",
+            "request": "launch",
+            "program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
+            "preLaunchTask": "compile",
+            "stopOnEntry": false,
+            "args": ["tests/**/*Test.js", "--no-timeouts", "--colors"], //you can specify paths to specific tests here
+            "cwd": "${workspaceRoot}",
+            "runtimeExecutable": null,
+            "env": {
+                "NODE_ENV": "testing"
+            },
+            "runtimeArgs": [
+                "--nolazy"
+            ],
+            "sourceMaps": true,
+            "smartStep": true,
+            "outFiles": [
+                "src/**/*"
+            ]
         }
     ]
 }
