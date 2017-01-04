@@ -27,10 +27,10 @@ export class LocalStoreServer {
      * 
      * @memberOf LocalStore
      */
-    constructor(config?: LSDynamoDBConfig) {
+    constructor(config?: LSDynamoDBConfig | null) {
         this.dynamodb = dynamodb;
         this.config = config || defaultConfig;
-        this.configure(config);
+        this.configure(this.config);
     }
 
     /**

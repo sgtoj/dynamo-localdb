@@ -20,7 +20,7 @@ class LocalStoreServer {
     constructor(config) {
         this.dynamodb = dynamodb;
         this.config = config || defaultConfig;
-        this.configure(config);
+        this.configure(this.config);
     }
     /**
      * Active DynamoDB process information.

@@ -1,6 +1,9 @@
 import * as AWS from "aws-sdk";
 export declare type LSAWSConfig = AWS.DynamoDB.ClientConfiguration;
 export declare type LSTableConfig = AWS.DynamoDB.CreateTableInput;
+export interface LSDataConfig {
+    [table: string]: LSItem[];
+}
 export interface LSItem {
     [key: string]: AWS.DynamoDB.AttributeValue;
 }
@@ -31,7 +34,7 @@ export declare class LocalStoreSchemaClient {
      *
      * @memberOf LocalStoreSchema
      */
-    delete(tableName: string): Promise<void>;
+    drop(tableName: string): Promise<void>;
     /**
      * List of current tables
      *
@@ -93,8 +96,8 @@ export declare class LocalStoreDataClient {
     count(table: string): Promise<number>;
 }
 export declare class LocalStoreClient {
-    private _schema;
-    private _data;
+    private schema;
+    private data;
     private config;
     private testTable;
     private dbClient;
@@ -106,22 +109,8 @@ export declare class LocalStoreClient {
      *
      * @memberOf LocalStore
      */
-    constructor(config?: LSAWSConfig);
-    /**
-     * Provides data operation methods.
-     *
-     * @type {LocalStoreData}
-     * @memberOf LocalStore
-     */
-    readonly data: LocalStoreDataClient;
+    constructor(config?: LSAWSConfig | null);
     readonly ready: boolean;
-    /**
-     * Provides schema operation methods.
-     *
-     * @type {LocalStoreSchema}
-     * @memberOf LocalStore
-     */
-    readonly schema: LocalStoreSchemaClient;
     /**
      * Configure AWS
      *
@@ -130,6 +119,12 @@ export declare class LocalStoreClient {
      * @memberOf LocalStore
      */
     configure(config: LSAWSConfig): void;
+    create(tableSchema: LSTableConfig): Promise<void>;
+    drop(tableName: string): Promise<void>;
+    list(): Promise<string[]>;
+    insert(tableName: string, items: LSItem | LSItem[]): Promise<void>;
+    read(tableName: string): Promise<LSItem[]>;
+    count(tableName: string): Promise<number>;
     /**
      * Test if connection is active is compable of creating a table
      *

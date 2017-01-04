@@ -21,7 +21,7 @@ export declare class LocalStoreServer {
      *
      * @memberOf LocalStore
      */
-    constructor(config?: LSDynamoDBConfig);
+    constructor(config?: LSDynamoDBConfig | null);
     /**
      * Active DynamoDB process information.
      *

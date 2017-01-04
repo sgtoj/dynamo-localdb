@@ -11,6 +11,7 @@ const client_1 = require("./client");
 const server_1 = require("./server");
 const testTableConfig = require("../data/tmptable");
 const defaultConfig = require("../data/defaults");
+;
 class LocalStore {
     /**
      * Creates an instance of LocalStore.
@@ -20,9 +21,19 @@ class LocalStore {
      *
      * @memberOf LocalStore
      */
-    constructor() {
-        this.client = new client_1.LocalStoreClient();
-        this.server = new server_1.LocalStoreServer();
+    constructor(config) {
+        config = config || {};
+        this.config = {};
+        this.config.client = config.client || null;
+        this.config.server = config.server || null;
+        this.config.schemas = config.schemas || null;
+        this.config.data = config.data || null;
+        if (!!config.schemas && !Array.isArray(config.schemas))
+            throw new Error("Incorrect input for schema. Must be null, undefined, or LSTableConfig[]");
+        if (!!config.data && typeof config.data !== "object")
+            throw new Error("Incorrect input for schema. Must be null, undefined, or LSDataConfig object");
+        this.client = new client_1.LocalStoreClient(this.config.client);
+        this.server = new server_1.LocalStoreServer(this.config.server);
     }
     get ready() {
         return this.client.ready && this.server.ready;
@@ -49,6 +60,44 @@ class LocalStore {
     kill() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.server.kill();
+        });
+    }
+    load() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.ready)
+                throw new Error("DynamoDB server is not running.");
+            if (!!this.config.schemas) {
+                let creates = this.config.schemas.map(t => {
+                    return this.client.create(t);
+                });
+                yield Promise.all(creates);
+            }
+            if (!!this.config.data) {
+                let inserts = [];
+                for (let table in this.config.data) {
+                    inserts.push(this.client.insert(table, this.config.data[table]));
+                }
+                yield Promise.all(inserts);
+            }
+        });
+    }
+    reload(dropAll = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.ready)
+                throw new Error("DynamoDb server is not running.");
+            let existingTables = yield this.client.list();
+            let tablesToDrop = existingTables.filter(t => {
+                if (dropAll || !this.config.schemas)
+                    return true;
+                return this.config.schemas.some(s => {
+                    return s.TableName === t;
+                });
+            });
+            let drops = tablesToDrop.map(t => {
+                return this.client.drop(t);
+            });
+            yield Promise.all(drops);
+            yield this.load();
         });
     }
     /**

@@ -175,12 +175,12 @@ describe("module", () => {
             });
         });
 
-        describe("delete()", () => {
-            it("should delete existing table on the server without errors", () => { 
+        describe("drop()", () => {
+            it("should drop existing table on the server without errors", () => { 
                 const dynamodb = new AWS.DynamoDB();
                 const client = new LocalStoreSchemaClient(dynamodb);
                 return client.create(table).then(() => {
-                    return client.delete(table.TableName);
+                    return client.drop(table.TableName);
                 }).then(() => {
                     return client.list();
                 }).then(tables => {
@@ -217,7 +217,6 @@ describe("module", () => {
         });
 
     });
-
 
     describe("LocalStoreDataClient", () => {
         let AWS;
@@ -260,10 +259,7 @@ describe("module", () => {
                     expect(count).to.be.equal(1);
                 });
             });
-        });
-
-        describe("import()", () => {
-            it("should import multiple documents into the table", () => {
+            it("should insert multiple documents into the table", () => {
                 const dbClient = new AWS.DynamoDB();
                 const dbDocClient = new AWS.DynamoDB.DocumentClient();
                 const client = new LocalStoreDataClient(dbClient, dbDocClient);
@@ -330,13 +326,155 @@ describe("module", () => {
 
     });
 
-
     describe("LocalStoreClient", () => {
+        let AWS;
+        let testDBServer;
+
+        beforeEach(() => {
+            AWS = require("aws-sdk");
+            AWS.config.update(defaults.client);
+            const dynamodb = new AWS.DynamoDB();
+            testDBServer = new LocalStoreServer();
+            return testDBServer.start();
+        });
+
+        afterEach(() => {
+            if (!!testDBServer && !!testDBServer.kill)
+                return testDBServer.kill();
+        });
         
         describe("constructor()", () => {
             it("should create an instance of itself", () => {
                 const client = new LocalStoreClient();
                 expect(client).be.an.instanceOf(LocalStoreClient);
+            });
+        });
+
+        describe("create()", () => {
+            it("should create new table on the server without errors", () => { 
+                const client = new LocalStoreClient();
+                return client.create(table).then(() => {
+                    return client.list();
+                }).then(tables => {
+                    const result = tables.some(t => { 
+                        return t === table.TableName
+                    });
+                    expect(result).to.be.equal(true);
+                });
+            });
+        });
+
+        describe("drop()", () => {
+            it("should drop existing table on the server without errors", () => { 
+                const client = new LocalStoreClient();
+                return client.create(table).then(() => {
+                    return client.drop(table.TableName);
+                }).then(() => {
+                    return client.list();
+                }).then(tables => {
+                    const result = tables.some(t => { 
+                        return t === table.TableName
+                    });
+                    expect(result).to.be.equal(false);
+                });
+            });
+        });
+
+        describe("list()", () => {
+            it("should return any array of existing tables", () => { 
+                const client = new LocalStoreClient();
+                return client.create(table).then(() => {
+                    return client.list();
+                }).then(tables => {
+                    expect(tables).is.an("array");
+                });
+            });
+            it("should list table that was just created", () => { 
+                const client = new LocalStoreClient();
+                return client.create(table).then(() => {
+                    return client.list();
+                }).then(tables => {
+                    let result = tables.some(t => {
+                        return t === table.TableName;
+                    })
+                    expect(result).to.be.equal(true);
+                });
+            });
+        });
+
+        describe("insert()", () => {
+            it("should insert new document into the table", () => {
+                const client = new LocalStoreClient();
+                return client.create(table).then(() => {
+                    return client.insert(table.TableName, data[0])
+                }).then(() => {
+                    return client.count(table.TableName);
+                }).then(count => {
+                    expect(count).to.be.equal(1);
+                });
+            });
+            it("should insert multiple documents into the table", () => {
+                const client = new LocalStoreClient();
+                const data2 = JSON.parse(JSON.stringify(data[0]));
+                data2.specialNumber = 43;
+                data2.reason = "Forrest Gump"
+                return client.create(table).then(() => {
+                    return client.insert(table.TableName, [data[0],data2])
+                }).then(() => {
+                    return client.count(table.TableName);
+                }).then(count => {
+                    expect(count).to.be.equal(2);
+                });
+            });
+        });
+
+        describe("read()", () => {
+            it("should return an array of documents", () => {
+                const client = new LocalStoreClient();
+                return client.create(table).then(() => {
+                    return client.read(table.TableName)
+                }).then(documents => {
+                    expect(documents).is.an("array");
+                });
+            });
+            it("should read the document of given table", () => {
+                const client = new LocalStoreClient();
+                return client.create(table).then(() => {
+                    return client.insert(table.TableName, data[0])
+                }).then(() => {
+                    return client.read(table.TableName);
+                }).then(documents => {
+                    expect(documents.length).to.be.equal(1);
+                });
+            });
+            it("should read the documents of given table", () => {
+                const client = new LocalStoreClient();
+                const data2 = JSON.parse(JSON.stringify(data[0]));
+                data2.specialNumber = 43;
+                data2.reason = "Forrest Gump"
+                return client.create(table).then(() => {
+                    return client.insert(table.TableName, [data[0],data2])
+                }).then(() => {
+                    return client.read(table.TableName);
+                }).then(documents => {
+                    expect(documents.length).to.be.equal(2);
+                });
+            });
+        });
+
+        describe("count()", () => {
+            it("should import multiple documents into the table", () => {
+                const client = new LocalStoreClient();
+                const data2 = JSON.parse(JSON.stringify(data[0]));
+                data2.specialNumber = 43;
+                data2.reason = "Forrest Gump"
+                return client.create(table).then(() => {
+                    return client.insert(table.TableName, [data[0],data2])
+                }).then(() => {
+                    return client.count(table.TableName);
+                }).then(count => {
+                    expect(count).to.be.equal(2);
+                });
             });
         });
 
@@ -432,7 +570,50 @@ describe("module", () => {
                 return db.start().then(() => {
                     return db.kill();
                 }).then(() => {
-                    expect(db.server.process).to.be.equal(null);                    
+                    expect(db.server.process).to.be.equal(null);                
+                }).catch(err => {
+                    return db.kill().then(() => {
+                        throw err;
+                    });
+                });
+            });
+        });
+
+        describe("load()", () => {
+            it("should load the configured data", () => {
+                const db = new LocalStore(tmpTable);
+                return db.start().then(() => {
+                    return db.load();
+                }).then(() => {
+                    return db.client.list(tmpTable.schemas[0].TableName);
+                }).then(tables => {
+                    expect(tables.length).to.be.equal(1);
+                    return db.kill();
+                }).catch(err => {
+                    return db.kill().then(() => {
+                        throw err;
+                    });
+                });
+            });
+        });
+
+        describe("reload()", () => {
+            it("should reload the configured data", () => {
+                const db = new LocalStore(tmpTable);
+                return db.start().then(() => {
+                    return db.load();
+                }).then(() => {
+                    let data = JSON.parse(JSON.stringify(tmpTable.data[tmpTable.schemas[0].TableName][0]));
+                    data.specialNumber = 43;
+                    data.reason = "Forrest Gump";
+                    return db.client.insert(tmpTable.schemas[0].TableName, data);
+                }).then(() => {
+                    return db.reload();
+                }).then(() => {
+                    return db.client.list(tmpTable.schemas[0].TableName);
+                }).then(tables => {
+                    expect(tables.length).to.be.equal(1);
+                    return db.kill();
                 }).catch(err => {
                     return db.kill().then(() => {
                         throw err;

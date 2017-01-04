@@ -11,6 +11,10 @@ interface LocalStoreDataConfig {
 export type LSAWSConfig = AWS.DynamoDB.ClientConfiguration;
 export type LSTableConfig = AWS.DynamoDB.CreateTableInput;
 
+export interface LSDataConfig {
+    [table: string]: LSItem[];
+}
+
 export interface LSItem {
     [key: string]: AWS.DynamoDB.AttributeValue;
 }
@@ -54,7 +58,7 @@ export class LocalStoreSchemaClient {
      * 
      * @memberOf LocalStoreSchema
      */
-    public async delete (tableName: string): Promise<void> {
+    public async drop (tableName: string): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             let tableConfig = { TableName: tableName };
             this.db.deleteTable(tableConfig, (err, data) => {
@@ -175,13 +179,12 @@ export class LocalStoreDataClient {
 }
 
 export class LocalStoreClient {
-    private _schema: LocalStoreSchemaClient;
-    private _data: LocalStoreDataClient;
+    private schema: LocalStoreSchemaClient;
+    private data: LocalStoreDataClient;
     private config: LSAWSConfig;
     private testTable: any;
     private dbClient: AWS.DynamoDB;
     private dbDocClient: AWS.DynamoDB.DocumentClient;
-
 
     /**
      * Creates an instance of LocalStore.
@@ -190,34 +193,15 @@ export class LocalStoreClient {
      * 
      * @memberOf LocalStore
      */
-    constructor(config?: LSAWSConfig) {
+    constructor(config?: LSAWSConfig | null) {
         this.config = config || defaultConfig;
         this.testTable = testTableConfig;
         this.setup();
     }
 
-    /**
-     * Provides data operation methods. 
-     * 
-     * @type {LocalStoreData}
-     * @memberOf LocalStore
-     */
-    public get data(): LocalStoreDataClient {
-        return this._data;
-    }
 
     public get ready(): boolean {
         return !!this.dbClient && !!this.dbDocClient && !!this.data && !!this.schema;
-    }
-
-    /**
-     * Provides schema operation methods.
-     * 
-     * @type {LocalStoreSchema}
-     * @memberOf LocalStore
-     */
-    public get schema(): LocalStoreSchemaClient {
-        return this._schema;
     }
 
     /**
@@ -230,6 +214,38 @@ export class LocalStoreClient {
     public configure (config: LSAWSConfig): void {
         this.config = config;
         this.setup();
+    }
+
+    public async create (tableSchema: LSTableConfig): Promise<void> {
+        return await this.schema.create(tableSchema);
+    }
+
+    public async drop (tableName: string): Promise<void> {
+        return await this.schema.drop(tableName);
+    }
+
+    public async list (): Promise<string[]> {
+        return await this.schema.list();
+    }
+
+    public async insert (tableName: string, items: LSItem | LSItem[]): Promise<void> {
+        if (!Array.isArray(items))
+            return await this.data.insert(tableName, items);
+
+        let inserts = items.map(item => {
+            return this.data.insert(tableName, item);
+        });
+
+        await Promise.all(inserts);
+        return;
+    }
+
+    public async read (tableName: string): Promise<LSItem[]> {
+        return this.data.read(tableName);
+    }
+
+    public async count (tableName: string): Promise<number> {
+        return this.data.count(tableName);
     }
 
     /**
@@ -246,7 +262,7 @@ export class LocalStoreClient {
         await this.schema.create(table);
         const result = extended ? await this.testData(table.TableName, data) : await this.testSchema(table.TableName);
         if (result)
-             await this.schema.delete(table.TableName);
+             await this.schema.drop(table.TableName);
         return result;
     }
 
@@ -265,8 +281,8 @@ export class LocalStoreClient {
         AWS.config.update(this.config);
         this.dbClient = new AWS.DynamoDB();
         this.dbDocClient = new AWS.DynamoDB.DocumentClient();
-        this._schema = new LocalStoreSchemaClient(this.dbClient);
-        this._data = new LocalStoreDataClient(this.dbClient, this.dbDocClient);
+        this.schema = new LocalStoreSchemaClient(this.dbClient);
+        this.data = new LocalStoreDataClient(this.dbClient, this.dbDocClient);
     }
 
 }

@@ -48,7 +48,7 @@ class LocalStoreSchemaClient {
      *
      * @memberOf LocalStoreSchema
      */
-    delete(tableName) {
+    drop(tableName) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
                 let tableConfig = { TableName: tableName };
@@ -187,26 +187,8 @@ class LocalStoreClient {
         this.testTable = testTableConfig;
         this.setup();
     }
-    /**
-     * Provides data operation methods.
-     *
-     * @type {LocalStoreData}
-     * @memberOf LocalStore
-     */
-    get data() {
-        return this._data;
-    }
     get ready() {
         return !!this.dbClient && !!this.dbDocClient && !!this.data && !!this.schema;
-    }
-    /**
-     * Provides schema operation methods.
-     *
-     * @type {LocalStoreSchema}
-     * @memberOf LocalStore
-     */
-    get schema() {
-        return this._schema;
     }
     /**
      * Configure AWS
@@ -218,6 +200,42 @@ class LocalStoreClient {
     configure(config) {
         this.config = config;
         this.setup();
+    }
+    create(tableSchema) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.schema.create(tableSchema);
+        });
+    }
+    drop(tableName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.schema.drop(tableName);
+        });
+    }
+    list() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.schema.list();
+        });
+    }
+    insert(tableName, items) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!Array.isArray(items))
+                return yield this.data.insert(tableName, items);
+            let inserts = items.map(item => {
+                return this.data.insert(tableName, item);
+            });
+            yield Promise.all(inserts);
+            return;
+        });
+    }
+    read(tableName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.data.read(tableName);
+        });
+    }
+    count(tableName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.data.count(tableName);
+        });
     }
     /**
      * Test if connection is active is compable of creating a table
@@ -234,7 +252,7 @@ class LocalStoreClient {
             yield this.schema.create(table);
             const result = extended ? yield this.testData(table.TableName, data) : yield this.testSchema(table.TableName);
             if (result)
-                yield this.schema.delete(table.TableName);
+                yield this.schema.drop(table.TableName);
             return result;
         });
     }
@@ -255,8 +273,8 @@ class LocalStoreClient {
         AWS.config.update(this.config);
         this.dbClient = new AWS.DynamoDB();
         this.dbDocClient = new AWS.DynamoDB.DocumentClient();
-        this._schema = new LocalStoreSchemaClient(this.dbClient);
-        this._data = new LocalStoreDataClient(this.dbClient, this.dbDocClient);
+        this.schema = new LocalStoreSchemaClient(this.dbClient);
+        this.data = new LocalStoreDataClient(this.dbClient, this.dbDocClient);
     }
 }
 exports.LocalStoreClient = LocalStoreClient;
