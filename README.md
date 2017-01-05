@@ -92,7 +92,7 @@ db.start().then((config) => {
 
 ### Configuration
 ```js
-{
+let config = {
   server: { 
     /* see available options defined at... */
     /* https://github.com/Medium/local-dynamo */
