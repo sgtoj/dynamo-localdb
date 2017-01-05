@@ -32,7 +32,7 @@ describe("module", () => {
     const clientConfig = require("../data/testconfig").client;
     const serverConfig = require("../data/testconfig").server;
     const table = tmpTable.schemas[0];
-    const data = tmpTable.data[table.TableName]
+    const data = tmpTable.data[table.TableName];
 
     describe("LocalStoreServer", () => {
 
