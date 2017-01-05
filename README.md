@@ -1,5 +1,3 @@
-#### Under development. Not published to NPM yet.
-
 # dynamo-localdb
 
 Simple node module that is used to launch and setup local running DynanoDB in 
