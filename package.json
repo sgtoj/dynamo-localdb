@@ -2,10 +2,15 @@
   "name": "dynamo-localdb",
   "version": "0.0.1",
   "description": "CLI application to launch local dynamodb instance and provide commands to create, load, reload, and delete tables with or without data.",
-  "main": "index.js",
+  "main": "./app/index.js",
+  "homepage": "https://github.com/sgtoj/dynamo-localdb",
   "repository": {
     "type": "git",
     "url": "https://github.com/sgtoj/dynamo-localdb.git"
+  },
+   "bugs": {
+    "url": "https://github.com/sgtoj/dynamo-localdb/issues",
+    "mail": ""
   },
   "scripts": {
     "compile": "node ./node_modules/typescript/bin/tsc",
@@ -26,5 +31,17 @@
   "dependencies": {
     "aws-sdk": "^2.7.20",
     "local-dynamo": "^0.4.1"
-  }
+  },
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "types": "./declaration/main.d.ts",
+  "typings": "./declaration/main.d.ts",
+  "keywords": [
+    "dynamodb",
+    "aws",
+    "workflow",
+    "amazon"
+  ]
+  
 }
