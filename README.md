@@ -69,11 +69,11 @@ let LocalDB = require("../app/main");
 let config = {
   schemas: [ 
     /// scheme data as defined by AWS.DynamoDB.createTable() documentation...
+   /// http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#createTable-property
   ],
   data: {
     "name-of-table": [{
        /// json representation of data for the given table...
-       /// http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#createTable-property
     }]
   }
 }
@@ -90,6 +90,34 @@ db.start().then((config) => {
 });
 ```
 
+### Configuration
+```js
+{
+  server: { 
+    /* see available options defined at... */
+    /* https://github.com/Medium/local-dynamo */
+  },
+  client: {     
+    /* see available options defined at... */
+    /* http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Config.html#constructor-property */
+  },
+  schema: [
+    {
+      /* see AWS.DynamoDB.createTable() documentation */
+      /* http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#createTable-property */
+    }
+  ],
+  data: {
+    "TABLE-NAME-HERE" : {
+       /* json representation of data for the given table... */ 
+    }
+  }
+}
+```
+
+##### Note
+- If `server.port` is changed, the port value must match at `client.endpoint`. 
+
 ## Troubleshooting
 
 - Change server process `stdio` setting to `inherit` so that stderr pipes to the console.
@@ -99,5 +127,5 @@ db.start().then((config) => {
 
 ## Licensing and Notices
 
-- [MIT Licensing](./LICENSE.md)
-- [3rd Party Notices](./NOTICES.md) 
+- [MIT License Notice](./LICENSE.md)
+- [3rd-Party Notices](./NOTICES.md) 
