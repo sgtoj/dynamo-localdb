@@ -92,23 +92,30 @@ db.start().then((config) => {
 ```js
 let config = {
   server: { 
-    /* see available options defined at... */
+    port: 8000
+    /* see full list of available options defined at... */
     /* https://github.com/Medium/local-dynamo */
   },
   client: {     
-    /* see available options defined at... */
+    region: "us-east-1",
+    endpoint: "http://localhost:8000",
+    accessKeyId: "AKID",
+    serectAccessKey: "SECRET"
+    /* see full list available options defined at... */
     /* http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Config.html#constructor-property */
   },
-  schema: [
+  schema: [ /* array of schemas */
     {
       /* see AWS.DynamoDB.createTable() documentation */
       /* http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#createTable-property */
     }
   ],
   data: {
-    "TABLE-NAME-HERE" : {
-       /* json representation of data for the given table... */ 
-    }
+    "TABLE-NAME-HERE" : [ /* array of documents for given table */
+      {
+       /* json representation a documnent's data for the given table... */ 
+      }
+    ]
   }
 }
 ```
