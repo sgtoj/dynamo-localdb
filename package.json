@@ -1,6 +1,6 @@
 {
   "name": "dynamo-localdb",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Module to launch local dynamodb instance and provide commands to create, load, reload, and delete tables with or without data.",
   "main": "./app/index.js",
   "homepage": "https://github.com/sgtoj/dynamo-localdb",
