@@ -8,6 +8,21 @@ setup and reset the database to a given configration (data and schemas alike).
 
 ## Instructions
 
+### Commands
+
+```js
+let config = { /* ... */ }
+let LocalDB = require("dynamo-localdb");
+let db = new LocalDB.LocalStore(config);
+```
+
+- `db.start()`: Starts the local DynamoDB server.
+- `db.kill()`: Kills the local running DynamoDB server.
+- `db.load()`: Configures DynamoDB with the given configuration.
+- `db.reload()`: Drops all tables, then calls `db.load()`.
+- `db.test()`: Tests where the module's client can interact with the server.
+
+
 ### Installation
 
 ```
@@ -23,7 +38,7 @@ npm install dynamo-localdb --save
 Starting up the local DynamoDB server.
 
 ```js
-let LocalDB = require("../app/main");
+let LocalDB = require("dynamo-localdb");
 let db = new LocalDB.LocalStore();
 db.start().then(() => {
   console.log("DynamoDB server has started. Listening on default port of 8000.")
@@ -33,7 +48,7 @@ db.start().then(() => {
 Quick test of the server and client.
 
 ```js
-let LocalDB = require("../app/main");
+let LocalDB = require("dynamo-localdb");
 let db = new LocalDB.LocalStore();
 db.start().then(() => {
   console.log("DynamoDB server has started.");
@@ -49,7 +64,7 @@ db.start().then(() => {
 Starting up the local DynamoDB with configuration data for the server.
 
 ```js
-let LocalDB = require("../app/main");
+let LocalDB = require("dynamo-localdb");
 let config = {
   server: { port: 3000 }
   client: { region: "us-east-1", endpoint: "http://localhost:3000" }
@@ -63,15 +78,15 @@ db.start().then((config) => {
 Starting up the local DynamoDB with configuration for the schemas, and data.
 
 ```js
-let LocalDB = require("../app/main");
+let LocalDB = require("dynamo-localdb");
 let config = {
   schemas: [ 
-    /// scheme data as defined by AWS.DynamoDB.createTable() documentation...
-   /// http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#createTable-property
+    /* scheme data as defined by AWS.DynamoDB.createTable() documentation... */
+    /* http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#createTable-property */
   ],
   data: {
     "name-of-table": [{
-       /// json representation of data for the given table...
+       /* json representation of data for the given table... */
     }]
   }
 }
@@ -84,7 +99,7 @@ db.start().then((config) => {
   console.log("All defined tables and data have been created and inserted.");
   return db.client.list();
 }).then(tables => {
-  console.load(`List of available tables: ${ tables }`);
+  console.log(`List of available tables: ${ tables }`);
 });
 ```
 
