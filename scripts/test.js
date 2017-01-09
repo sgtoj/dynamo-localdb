@@ -1,7 +1,7 @@
 "use strict";
 
 let LocalDB = require("../app/main");
-let db = new LocalDB.LocalStore(config);
+let db = new LocalDB.LocalStore();
 
 db.start().then(() =>{
     console.log(`Database has started.`);

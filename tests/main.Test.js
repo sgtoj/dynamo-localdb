@@ -138,11 +138,10 @@ describe("module", () => {
     });
 
     describe("LocalStoreSchemaClient", () => {
-        let AWS;
+        let AWS = require("aws-sdk");
         let testDBServer;
 
         beforeEach(() => {
-            AWS = require("aws-sdk");
             AWS.config.update(defaults.client);
             testDBServer = new LocalStoreServer();
             return testDBServer.start();
