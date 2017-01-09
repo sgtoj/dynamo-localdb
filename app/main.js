@@ -16,8 +16,7 @@ class LocalStore {
     /**
      * Creates an instance of LocalStore.
      *
-     * @param {LSAWSConfig} awsConfig Configuration options for the local AWS client.
-     * @param {LSDynamoDBConfig} dbConfig Configuration options for DynamoDB and its spawned process.
+     * @param {LocalStoreConfig} config Configration for server, client, schemas and data.
      *
      * @memberOf LocalStore
      */
@@ -62,6 +61,14 @@ class LocalStore {
             yield this.server.kill();
         });
     }
+    /**
+     * Configs the server (schemas and data alike) to the given configuration.
+     *
+     * @param {boolean} [dropAll=false] Drop all tables.
+     * @returns {Promise<void>}
+     *
+     * @memberOf LocalStore
+     */
     load() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.ready)
@@ -81,6 +88,14 @@ class LocalStore {
             }
         });
     }
+    /**
+     * Resets the server configuration (schemas and data alike) to the given configuration.
+     *
+     * @param {boolean} [dropAll=false] Drop all tables.
+     * @returns {Promise<void>}
+     *
+     * @memberOf LocalStore
+     */
     reload(dropAll = true) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.ready)
@@ -101,7 +116,7 @@ class LocalStore {
         });
     }
     /**
-     * Test if connection is active is compable of creating a table.
+     * Test if connection is active is compilable of creating a table.
      *
      * @param {boolean} [extended=false] Test data access too.
      * @returns {Promise<boolean>}
